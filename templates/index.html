@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-main: linear-gradient(135deg, #4f9cff, #70d6ff);
+            --card-bg: rgba(255, 255, 255, 0.15);
+            --card-bg-dark: rgba(0, 0, 0, 0.35);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+            background: var(--bg-main);
+            transition: background 0.4s ease, color 0.3s;
+        }
+
+        body.dark {
+            color: #e9ecef;
+            background: radial-gradient(circle at top, #111827, #020617);
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 25px 30px;
+            backdrop-filter: blur(14px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        body.dark .container {
+            background: var(--card-bg-dark);
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .top-bar h2 {
+            margin: 0;
+            font-size: 26px;
+        }
+
+        .toggle-dark {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.5);
+            font-size: 13px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .search-row input {
+            flex: 1;
+            min-width: 220px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            background: #1c7ed6;
+        }
+
+        .btn.secondary {
+            background: #20c997;
+        }
+
+        .btn.small {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 800px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        body.dark .card {
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .current-main {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .current-temp {
+            font-size: 46px;
+            font-weight: 600;
+        }
+
+        .current-extra {
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .icon-large {
+            width: 90px;
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .forecast-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .day-card {
+            text-align: center;
+            padding: 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.18);
+            font-size: 13px;
+        }
+
+        .day-card img {
+            width: 50px;
+        }
+
+        .error {
+            margin-top: 8px;
+            background: rgba(220,53,69,0.6);
+            padding: 8px;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+
+        .history {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .history-chip {
+            background: rgba(255,255,255,0.15);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .suggest-box {
+            position: relative;
+        }
+
+        .suggest-list {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 42px;
+            background: rgba(255,255,255,0.95);
+            color: #000;
+            border-radius: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .suggest-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .suggest-item:hover {
+            background: #e9ecef;
+        }
+
+        /* nền theo thời tiết */
+        body.bg-clear { background: linear-gradient(135deg, #56ccf2, #2f80ed); }
+        body.bg-clouds { background: linear-gradient(135deg, #757f9a, #d7dde8); }
+        body.bg-rain { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+        body.bg-snow { background: linear-gradient(135deg, #83a4d4, #b6fbff); }
+        body.bg-thunderstorm { background: radial-gradient(circle at top, #141e30, #243b55); }
+        body.bg-mist { background: linear-gradient(135deg, #606c88, #3f4c6b); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <h2>🌤 Weather Dashboard</h2>
+        <button class="toggle-dark" id="toggleDark">🌙 Dark mode</button>
+    </div>
+
+    <div class="search-row">
+        <div class="suggest-box">
+            <input type="text" id="cityInput" placeholder="Nhập tên thành phố…">
+            <div id="suggestList" class="suggest-list" style="display:none;"></div>
+        </div>
+        <button class="btn" id="btnSearch">Tìm kiếm</button>
+        <button class="btn secondary" id="btnLocate">📍 Vị trí của tôi</button>
+    </div>
+
+    <div id="errorBox" class="error" style="display:none;"></div>
+
+    <div class="history" id="historyBox"></div>
+
+    <div class="content">
+        <div class="card" id="currentCard">
+            <h3 id="cityName">Chưa có dữ liệu</h3>
+            <div class="current-main">
+                <div>
+                    <div class="current-temp" id="currentTemp">--°C</div>
+                    <div class="current-extra" id="currentDesc">Nhập thành phố để xem thời tiết</div>
+                    <div class="current-extra" id="currentMore"></div>
+                </div>
+                <img id="currentIcon" class="icon-large" style="display:none;">
+            </div>
+        </div>
+
+        <div class="card">
+            <h4>Dự báo 5 ngày</h4>
+            <div class="forecast-grid" id="forecastGrid"></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+        <h4>Biểu đồ nhiệt độ 24h tới</h4>
+        <canvas id="tempChart" height="80"></canvas>
+    </div>
+</div>
+
+<script>
+    const cityInput = document.getElementById("cityInput");
+    const btnSearch = document.getElementById("btnSearch");
+    const btnLocate = document.getElementById("btnLocate");
+    const errorBox = document.getElementById("errorBox");
+    const cityNameEl = document.getElementById("cityName");
+    const currentTempEl = document.getElementById("currentTemp");
+    const currentDescEl = document.getElementById("currentDesc");
+    const currentMoreEl = document.getElementById("currentMore");
+    const currentIconEl = document.getElementById("currentIcon");
+    const forecastGrid = document.getElementById("forecastGrid");
+    const historyBox = document.getElementById("historyBox");
+    const suggestList = document.getElementById("suggestList");
+    const toggleDark = document.getElementById("toggleDark");
+
+    let tempChart = null;
+
+    // ====== Dark mode ======
+    toggleDark.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+    });
+
+    // ====== Hiển thị lỗi ======
+    function showError(msg) {
+        errorBox.style.display = "block";
+        errorBox.textContent = msg;
+    }
+    function clearError() {
+        errorBox.style.display = "none";
+        errorBox.textContent = "";
+    }
+
+    // ====== Cập nhật nền theo thời tiết ======
+    function updateBackground(main) {
+        document.body.classList.remove(
+            "bg-clear","bg-clouds","bg-rain","bg-snow","bg-thunderstorm","bg-mist"
+        );
+        const key = main ? main.toLowerCase() : "";
+        if (key.includes("clear")) document.body.classList.add("bg-clear");
+        else if (key.includes("cloud")) document.body.classList.add("bg-clouds");
+        else if (key.includes("rain") || key.includes("drizzle")) document.body.classList.add("bg-rain");
+        else if (key.includes("snow")) document.body.classList.add("bg-snow");
+        else if (key.includes("thunder")) document.body.classList.add("bg-thunderstorm");
+        else if (key.includes("mist") || key.includes("fog") || key.includes("haze")) document.body.classList.add("bg-mist");
+    }
+
+    // ====== Lịch sử tìm kiếm ======
+    function loadHistory() {
+        historyBox.innerHTML = "";
+        const items = JSON.parse(localStorage.getItem("weather_history") || "[]");
+        items.forEach(city => {
+            const chip = document.createElement("div");
+            chip.className = "history-chip";
+            chip.textContent = city;
+            chip.onclick = () => {
+                cityInput.value = city;
+                fetchWeather({ city });
+            };
+            historyBox.appendChild(chip);
+        });
+    }
+
+    function saveHistory(city) {
+        if (!city) return;
+        let items = JSON.parse(localStorage.getItem("weather_history") || "[]");
+        items = items.filter(c => c.toLowerCase() !== city.toLowerCase());
+        items.unshift(city);
+        if (items.length > 7) items = items.slice(0,7);
+        localStorage.setItem("weather_history", JSON.stringify(items));
+        loadHistory();
+    }
+
+    // ====== Vẽ biểu đồ Chart.js ======
+    function renderChart(hourly) {
+        const ctx = document.getElementById("tempChart").getContext("2d");
+        const labels = hourly.map(h => h.time);
+        const temps = hourly.map(h => h.temp);
+
+        if (tempChart) tempChart.destroy();
+
+        tempChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Nhiệt độ (°C)",
+                    data: temps,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: { ticks: { color: "#fff" } },
+                    y: { ticks: { color: "#fff" } }
+                },
+                plugins: {
+                    legend: { labels: { color: "#fff" } }
+                }
+            }
+        });
+    }
+
+    // ====== Cập nhật giao diện từ data ======
+    function renderWeather(data) {
+        const c = data.current;
+        cityNameEl.textContent = `${c.city}, ${c.country}`;
+        currentTempEl.textContent = `${Math.round(c.temp)}°C`;
+        currentDescEl.textContent = c.description;
+        currentMoreEl.textContent =
+            `Cảm giác: ${Math.round(c.feels_like)}°C | Độ ẩm: ${c.humidity}% | Gió: ${c.wind_speed} m/s | Áp suất: ${c.pressure} hPa`;
+        currentIconEl.src = `https://openweathermap.org/img/wn/${c.icon}@4x.png`;
+        currentIconEl.style.display = "block";
+
+        updateBackground(c.main);
+
+        // forecast 5 ngày
+        forecastGrid.innerHTML = "";
+        data.forecast_daily.forEach(day => {
+            const div = document.createElement("div");
+            div.className = "day-card";
+            div.innerHTML = `
+                <div><strong>${day.date}</strong></div>
+                <img src="https://openweathermap.org/img/wn/${day.icon}@2x.png">
+                <div>${Math.round(day.temp_min)}° / ${Math.round(day.temp_max)}°</div>
+                <div style="font-size:11px">${day.description}</div>
+            `;
+            forecastGrid.appendChild(div);
+        });
+
+        // chart
+        renderChart(data.hourly);
+    }
+
+    // ====== Gọi API server ======
+    async function fetchWeather({ city = null, lat = null, lon = null }) {
+        clearError();
+        let url = "/api/weather?";
+        if (city) {
+            url += "city=" + encodeURIComponent(city);
+        } else if (lat && lon) {
+            url += `lat=${lat}&lon=${lon}`;
+        } else {
+            showError("Thiếu thông tin thành phố hoặc tọa độ.");
+            return;
+        }
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!res.ok) {
+                showError(data.error || "Có lỗi xảy ra.");
+                return;
+            }
+            renderWeather(data);
+            if (city) saveHistory(city);
+        } catch (e) {
+            showError("Không thể kết nối server.");
+        }
+    }
+
+    // ====== Sự kiện tìm kiếm ======
+    btnSearch.addEventListener("click", () => {
+        const city = cityInput.value.trim();
+        if (!city) {
+            showError("Vui lòng nhập tên thành phố.");
+            return;
+        }
+        fetchWeather({ city });
+    });
+
+    cityInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            btnSearch.click();
+        }
+    });
+
+    // ====== Vị trí hiện tại (GPS) ======
+    btnLocate.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            showError("Trình duyệt không hỗ trợ định vị.");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                fetchWeather({ lat: latitude, lon: longitude });
+            },
+            () => showError("Không thể lấy vị trí. Hãy thử lại và cho phép quyền GPS.")
+        );
+    });
+
+    // ====== Gợi ý thành phố (autocomplete) ======
+    let suggestTimeout = null;
+    cityInput.addEventListener("input", () => {
+        const q = cityInput.value.trim();
+        if (!q) {
+            suggestList.style.display = "none";
+            return;
+        }
+        if (suggestTimeout) clearTimeout(suggestTimeout);
+        suggestTimeout = setTimeout(async () => {
+            const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if (!data.length) {
+                suggestList.style.display = "none";
+                return;
+            }
+            suggestList.innerHTML = "";
+            data.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "suggest-item";
+                div.textContent = item.label;
+                div.onclick = () => {
+                    cityInput.value = item.label;
+                    suggestList.style.display = "none";
+                    fetchWeather({ city: item.name });
+                };
+                suggestList.appendChild(div);
+            });
+            suggestList.style.display = "block";
+        }, 300);
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!suggestList.contains(e.target) && e.target !== cityInput) {
+            suggestList.style.display = "none";
+        }
+    });
+
+    // Load lịch sử khi mở trang
+    loadHistory();
+</script>
+
+</body>
+</html>

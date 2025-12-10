@@ -1,0 +1,8 @@
+pip install -r requirements.txt
+python app.py
+
+#Cấu trúc
+#README.md
+#templates/index.html
+#app.py
+#requirements.txt

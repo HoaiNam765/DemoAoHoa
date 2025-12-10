@@ -1,0 +1,5 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "postCreateCommand": "pip install flask requests",
+  "forwardPorts": [5000]
+}
