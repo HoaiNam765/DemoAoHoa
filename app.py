@@ -10,6 +10,9 @@ CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
 FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 GEO_URL = "http://api.openweathermap.org/geo/1.0/direct"
 
+#Hoai Nam
+#HoaiNam
+#hasdjhasfas
 
 def get_current_weather(city=None, lat=None, lon=None):
     params = {
